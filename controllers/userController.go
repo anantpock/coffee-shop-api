@@ -5,32 +5,29 @@ import (
 
 	"github.com/anantpock/coffee-shop-api/config"
 	"github.com/anantpock/coffee-shop-api/models"
-	"github.com/gin-gonic/gin"
+	"github.com/labstack/echo/v4"
 )
 
-func GetUsers(c *gin.Context) {
+func GetUsers(c echo.Context) error {
 	var users []models.User
 	result := config.DB.Find(&users)
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
-		return
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": result.Error.Error()})
 	}
-	c.JSON(http.StatusOK, users)
+	return c.JSON(http.StatusOK, users)
 }
 
-func CreateUser(c *gin.Context) {
+func CreateUser(c echo.Context) error {
 	var user models.User
 
-	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+	if err := c.Bind(&user); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 	}
 
 	result := config.DB.Create(&user)
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
-		return
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": result.Error.Error()})
 	}
 
-	c.JSON(http.StatusCreated, user)
+	return c.JSON(http.StatusCreated, user)
 }

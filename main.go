@@ -1,19 +1,27 @@
 package main
 
 import (
+	"log"
+
 	"github.com/anantpock/coffee-shop-api/config"
-	"github.com/anantpock/coffee-shop-api/models"
 	"github.com/anantpock/coffee-shop-api/routes"
-	"github.com/gin-gonic/gin"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 func main() {
-	config.ConnectDB()
+	err := config.ConnectDB()
+	if err != nil {
+		log.Fatal("Failed to connect to database:", err)
+	}
+	log.Println("Database connected successfully")
 
-	config.DB.AutoMigrate(&models.User{}, &models.Product{}, &models.Order{})
+	e := echo.New()
 
-	r := gin.Default()
-	routes.SetupRoutes(r)
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
 
-	r.Run(":8080")
+	routes.SetupRoutes(e)
+
+	e.Logger.Fatal(e.Start(":8080"))
 }

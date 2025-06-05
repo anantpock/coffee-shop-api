@@ -6,28 +6,27 @@ import (
 	"strings"
 
 	"github.com/anantpock/coffee-shop-api/utils"
-	"github.com/gin-gonic/gin"
+	"github.com/labstack/echo/v4"
 )
 
-func AuthMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
+func AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		authHeader := c.Request().Header.Get("Authorization")
 		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header missing"})
-			c.Abort()
-			return
+			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Authorization header missing"})
 		}
 
 		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
 		claims, err := utils.ParseToken(tokenStr, os.Getenv("JWT_SECRET"))
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
-			c.Abort()
-			return
+			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid token"})
 		}
 
+		// Save values to context so handlers can use them
 		c.Set("user_id", claims.UserID)
 		c.Set("role", claims.Role)
-		c.Next()
+
+		// Continue processing next middleware/handler
+		return next(c)
 	}
 }
